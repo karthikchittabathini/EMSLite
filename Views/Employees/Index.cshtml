@@ -6,6 +6,16 @@
 
 <h1>Employees List</h1>
 
+<br />
+<form method="get" asp-action="Search">
+    <div>
+        <input type="text" name="input" placeholder="Enter search Keyword" style="display: inline-block; margin-right: 10px; background-color: #f2f2f2; border: 1px solid #ccc; padding: 5px;" />
+        <button type="submit" class="btn btn-secondary btn-sm" style="display:inline-block">Search</button>
+    </div>
+    
+</form>
+
+<br />
 <p>
     <button type="button" class="btn btn-secondary" onclick="location.href='@Url.Action("Create", "Employees")'">Create New</button>
     <button type="button" class="btn btn-secondary" style="float: right;" onclick="location.href='@Url.Action("Index", "Home")'">back</button>
@@ -59,7 +69,10 @@
                 @Html.DisplayFor(modelItem => item.MobileNumber)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.DateOfBirth.Date)
+                    @{
+                        var dt = item.DateOfBirth.ToShortDateString();
+                    }
+                    @Html.DisplayFor(modelItem => @dt)
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.Gender)
@@ -87,3 +100,9 @@
 }
     </tbody>
 </table>
+
+
+
+
+
+

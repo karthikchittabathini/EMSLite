@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using EmployeeManagementSystem.Models;
 using Microsoft.Data.SqlClient;
+using System.Diagnostics.Eventing.Reader;
+using System.Text;
+using Newtonsoft.Json;
 
 namespace EmployeeManagementSystem.Controllers
 {
@@ -19,44 +22,51 @@ namespace EmployeeManagementSystem.Controllers
             _context = context;
         }
 
-        // GET: Employees
+        
+        [HttpGet("GetAllEmployees")]
         public async Task<IActionResult> Index()
         {
             // Using the stored procedure 
             var result = _context.Employees.FromSqlRaw<Employee>("EXEC AllEmployees").ToList();
-            return _context.Employees != null ? 
+            return _context.Employees != null ?
                           View(result) :
-                          Problem("Entity set 'EMSDbContext.Employees'  is null.");
+                          Problem("There are no Employees");
         }
 
+
         // GET: Employees/Details/5
+        [HttpGet("GetEmployeeById/{id}")]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null || _context.Employees == null)
             {
-                return NotFound();
+                return NotFound("Not Found");
             }
 
-            var employee = await _context.Employees
-                .FirstOrDefaultAsync(m => m.EmployeeId == id);
+                
+            var result = _context.Employees.FromSqlRaw($"exec FindEmployee @p0", id).ToList();
+            var employee = result.Single();
             if (employee == null)
             {
-                return NotFound();
+                return NotFound("Employee Not Found With the Id provided");
             }
 
             return View(employee);
         }
 
+
         // GET: Employees/Create
+        [HttpGet("CreateEmployee")]
         public IActionResult Create()
         {
             return View();
         }
 
+
         // POST: Employees/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
+        [HttpPost("CreateEmployee")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("EmployeeId,FirstName,LastName,Designation,OfficeLocation,MobileNumber,DateOfBirth,Gender,Manager")] Employee employee)
         {
@@ -69,32 +79,36 @@ namespace EmployeeManagementSystem.Controllers
             return View(employee);
         }
 
+
+
         // GET: Employees/Edit/5
+        [HttpGet("EditEmployee/{id}")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null || _context.Employees == null)
             {
-                return NotFound();
+                return NotFound("Not Found");
             }
 
             var employee = await _context.Employees.FindAsync(id);
             if (employee == null)
             {
-                return NotFound();
+                return NotFound("No Employee Found");
             }
             return View(employee);
         }
 
+
         // POST: Employees/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
+        [HttpPost("EditEmployee/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("EmployeeId,FirstName,LastName,Designation,OfficeLocation,MobileNumber,DateOfBirth,Gender,Manager")] Employee employee)
         {
             if (id != employee.EmployeeId)
             {
-                return NotFound();
+                return NotFound("No Employee Found");
             }
 
             if (ModelState.IsValid)
@@ -125,14 +139,14 @@ namespace EmployeeManagementSystem.Controllers
         {
             if (id == null || _context.Employees == null)
             {
-                return NotFound();
+                return NotFound("No Employee Found");
             }
 
             var employee = await _context.Employees
                 .FirstOrDefaultAsync(m => m.EmployeeId == id);
             if (employee == null)
             {
-                return NotFound();
+                return NotFound("No Employee Found");
             }
 
             return View(employee);
@@ -152,14 +166,46 @@ namespace EmployeeManagementSystem.Controllers
             {
                 _context.Employees.Remove(employee);
             }
-            
+
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         private bool EmployeeExists(int id)
         {
-          return (_context.Employees?.Any(e => e.EmployeeId == id)).GetValueOrDefault();
+            return (_context.Employees?.Any(e => e.EmployeeId == id)).GetValueOrDefault();
         }
+
+
+        //Implementing the search operation
+
+        public IActionResult Search(string input)
+        {
+            int data;
+            bool IsInteger = int.TryParse(input, out data);
+
+            if (IsInteger)
+            {
+                var result = _context.Employees.FirstOrDefault(x=> x.EmployeeId == data);
+                var modelList = new List<Employee> { result };
+                return View("Index",modelList);
+            }
+            else
+            {
+                var result = _context.Employees.Where(item =>
+                EF.Functions.Like(item.FirstName, $"%{input}%") ||
+                EF.Functions.Like(item.LastName, $"%{input}%") ||
+                EF.Functions.Like(item.Designation, $"%{input}%") ||
+                EF.Functions.Like(item.OfficeLocation, $"%{input}%") ||
+                EF.Functions.Like(item.MobileNumber, $"%{input}%") ||
+                EF.Functions.Like(item.Gender, $"%{input}%") ||
+                EF.Functions.Like(item.DateOfBirth.ToString(), $"%{input}%") ||
+                EF.Functions.Like(item.Manager, $"%{input}%") 
+                ).ToList();
+                return View("Index",result);
+            }
+        }
+
+        
     }
 }
