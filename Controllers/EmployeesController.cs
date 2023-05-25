@@ -10,12 +10,16 @@ using Microsoft.Data.SqlClient;
 using System.Diagnostics.Eventing.Reader;
 using System.Text;
 using Newtonsoft.Json;
+using System.Drawing.Printing;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace EmployeeManagementSystem.Controllers
 {
     public class EmployeesController : Controller
     {
         private readonly EMSDbContext _context;
+        
 
         public EmployeesController(EMSDbContext context)
         {
@@ -26,10 +30,14 @@ namespace EmployeeManagementSystem.Controllers
         [HttpGet("GetAllEmployees")]
         public async Task<IActionResult> Index()
         {
+            
+            
             // Using the stored procedure 
-            var result = _context.Employees.FromSqlRaw<Employee>("EXEC AllEmployees").ToList();
+            var data = _context.Employees.FromSqlRaw<Employee>("EXEC AllEmployees").ToList();
+
+          
             return _context.Employees != null ?
-                          View(result) :
+                          View(data) :
                           Problem("There are no Employees");
         }
 
@@ -206,6 +214,42 @@ namespace EmployeeManagementSystem.Controllers
             }
         }
 
+        // Implementing the search operation with constraints
+
+        // First search box must only return results regarding the First Name
+        // Second search box must only return results regarding the Last Name
+        // Both the search boxes have a search button
+
+        public IActionResult ModifiedSearch(string fname, string lname)
+        {
+
+            var fnameresult = _context.Employees.Where(item =>
+                EF.Functions.Like(item.FirstName, $"%{fname}%")
+                ).ToList();
+            var lnameresults = _context.Employees.Where(item =>
+                EF.Functions.Like(item.LastName, $"%{lname}%")
+                ).ToList();
+            
+
+            if (string.IsNullOrEmpty(fname) && string.IsNullOrEmpty(lname))
+            {
+                return RedirectToAction(nameof(Index));
+            }
+            else if(!string.IsNullOrEmpty(fname) && !string.IsNullOrEmpty(lname))
+            {
+                var result = fnameresult.Where(x => x.LastName.Contains(lname));
+                return View("Index", result);
+            }
+            else if(!string.IsNullOrEmpty(fname))
+            {
+                return View("Index", fnameresult);
+            }
+            else if(!string.IsNullOrEmpty(lname))
+            {
+                return View("Index", lnameresults);
+            }
+            return RedirectToAction(nameof(Index));
+        }
         
     }
 }

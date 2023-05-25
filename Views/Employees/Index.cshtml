@@ -16,11 +16,21 @@
 </form>
 
 <br />
+
+<div>
+    <form method="get" asp-action="ModifiedSearch">
+        <input type="text" name="fname" placeholder="Enter FirstName keyword" style="display: inline-block; margin-right: 10px; background-color: #f2f2f2; border: 1px solid #ccc; padding: 5px;" />
+        <input type="text" name="lname" placeholder="Enter LastName keyword" style="display: inline-block; margin-right: 10px; background-color: #f2f2f2; border: 1px solid #ccc; padding: 5px;" />
+        <button type="submit" class="btn btn-secondary btn-sm" style="display:inline-block">Search</button>
+    </form>
+</div>
+
+<br />
 <p>
     <button type="button" class="btn btn-secondary" onclick="location.href='@Url.Action("Create", "Employees")'">Create New</button>
     <button type="button" class="btn btn-secondary" style="float: right;" onclick="location.href='@Url.Action("Index", "Home")'">back</button>
 </p>
-<table class="table">
+<table class="table table-striped">
     <thead>
         <tr>
             <th>
@@ -100,6 +110,13 @@
 }
     </tbody>
 </table>
+
+
+@if(Model.Count() == 0)
+{
+    <h5 style="text-align:center">No Records Found</h5>
+}
+
 
 
 
